@@ -1,5 +1,7 @@
-# docker-pureftp-s3
+# FTPS3
 A PureFTP docker image using AWS S3 storage
+
+github - https://github.com/phillsv87/docker-pureftp-s3
 
 FTPS3 is heavily based on https://github.com/stilliard/docker-pure-ftpd
 
