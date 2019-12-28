@@ -1,5 +1,5 @@
 # FTPS3
-A PureFTP docker image using AWS S3 storage
+A PureFTP docker image using AWS S3 storage and S3FS
 
 github - https://github.com/phillsv87/docker-pureftp-s3
 
@@ -185,7 +185,7 @@ spec:
 ```
 
 ## Creating Users
-Creating new users is done by connecting to the ftp containing and running the ftps3-add-user.sh
+Creating new users is done by connecting to the FTPS3 container and running the ftps3-add-user.sh
 script.
 
 ``` sh
@@ -197,7 +197,7 @@ docker exec -it '<container name>' /bin/bash
 kubectl exec -it '<pod name>' -- /bin/bash
 
 
-# You should no be in the containers shell
+# You should now be in the containers shell
 
 # make new user
 ftps3-add-user.sh '<username>'
