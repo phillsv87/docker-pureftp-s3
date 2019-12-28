@@ -2,6 +2,47 @@
 
 # Based on - https://raw.githubusercontent.com/stilliard/docker-pure-ftpd/hardened/run.sh
 
+# Check for S3 vars
+
+if [ -z "$S3_BUCKET_NAME" ]; then
+    echo 'S3_BUCKET_NAME enviornment variable required'
+    exit 1
+fi
+if [ ! -f "$S3_PASSWD_FILE" ]; then
+    echo "S3_PASSWD_FILE does not exist - path = $S3_PASSWD_FILE"
+    exit 1
+fi
+# end
+
+# S3 mount
+s3passdir='/4ffe9907-6607-458a-8d90-4d57fce59299'
+mkdir "$s3passdir"
+s3passfile="$s3passdir/9b1bde7a-b1cc-4f84-841c-6e7a1417bf85"
+cp "$S3_PASSWD_FILE"  "$s3passfile"
+chmod 600 "$s3passfile"
+
+echo 'Starting s3fs'
+if [ ! -d "$S3_MOUNT_PATH" ]; then
+    echo "Create mount point path - $S3_MOUNT_PATH"
+    mkdir -p "$S3_MOUNT_PATH"
+fi
+echo "Mount bucket '$S3_BUCKET_NAME' at '$S3_MOUNT_PATH'"
+s3fs "$S3_BUCKET_NAME" "$S3_MOUNT_PATH" -o passwd_file="$s3passfile" -o nonempty -o allow_other
+if [ "$?" != "0" ]; then
+    rm -rf "$s3passdir"
+    echo "Mount bucket '$S3_BUCKET_NAME' at '$S3_MOUNT_PATH' failed"
+    exit 1
+fi
+
+if [ ! -f "$PURE_PASSWDFILE" ]; then
+    echo "Touch $PURE_PASSWDFILE"
+    mkdir -p "$(dirname $PURE_PASSWDFILE)"
+    touch "$PURE_PASSWDFILE"
+fi
+
+rm -rf "$s3passdir"
+# end
+
 # build up flags passed to this file on run + env flag for additional flags
 # e.g. -e "ADDED_FLAGS=--tls=2"
 PURE_FTPD_FLAGS=" $@ $ADDED_FLAGS "
@@ -13,10 +54,10 @@ then
     rsyslogd
 fi
 
-PASSWD_FILE="/etc/pure-ftpd/passwd/pureftpd.passwd"
+PASSWD_FILE="$PURE_PASSWDFILE"
 
 # Load in any existing db from volume store
-if [ -e /etc/pure-ftpd/passwd/pureftpd.passwd ]
+if [ -e "$PURE_PASSWDFILE" ]
 then
     pure-pw mkdb /etc/pure-ftpd/pureftpd.pdb -f "$PASSWD_FILE"
 fi
@@ -135,6 +176,7 @@ then
     echo "Setting default max connections per ip to: $FTP_MAX_CONNECTIONS"
     PURE_FTPD_FLAGS="$PURE_FTPD_FLAGS -C $FTP_MAX_CONNECTIONS"
 fi
+
 
 # let users know what flags we've ended with (useful for debug)
 echo "Starting Pure-FTPd:"

@@ -34,7 +34,7 @@ RUN mkdir /tmp/pure-ftpd/ && \
 FROM debian:stretch
 
 # feel free to change this ;)
-LABEL maintainer "Andrew Stilliard <andrew.stilliard@gmail.com>"
+LABEL maintainer "Scott Vance <logic@newbaselogic.com>"
 
 # install dependencies
 # FIXME : libcap2 is not a dependency anymore. .deb could be fixed to avoid asking this dependency
@@ -72,16 +72,22 @@ RUN echo "" >> /etc/rsyslog.conf && \
 	echo "Updated /etc/rsyslog.conf with /var/log/pure-ftpd/pureftpd.log"
 
 # setup run/init file
-COPY run.sh /run.sh
-RUN chmod u+x /run.sh
+COPY run.sh /ftps3/run.sh
+RUN chmod u+x /ftps3/run.sh
+
+COPY ftps3-add-user.sh /usr/local/bin/ftps3-add-user.sh
+RUN chmod +x /usr/local/bin/ftps3-add-user.sh
+
+# Copy fuse config.
+COPY fuse.conf /etc/fuse.conf
 
 # default publichost, you'll need to set this for passive support
 ENV PUBLICHOST localhost
-
-# couple available volumes you may want to use
-VOLUME ["/home/ftpusers", "/etc/pure-ftpd/passwd"]
+ENV PURE_PASSWDFILE /home/ftpusers/ftp-config/pureftpd.passwd
+ENV S3_MOUNT_PATH /home/ftpusers
+ENV S3_USERS_DIR /home/ftpusers/ftp
 
 # startup
-CMD /run.sh -l puredb:/etc/pure-ftpd/pureftpd.pdb -E -j -R -P $PUBLICHOST -s -A -j -Z -H -4 -E -R -G -X -x
+CMD /ftps3/run.sh -l puredb:/etc/pure-ftpd/pureftpd.pdb -E -j -R -P $PUBLICHOST -s -A -j -Z -H -4 -E -R -G -X -x
 
 EXPOSE 21 30000-30009
